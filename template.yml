@@ -1,0 +1,129 @@
+name: Autograding Tests
+"on":
+  - push
+  - repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Sanity
+        id: sanity
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Sanity
+          setup-command: npm install
+          command: npm test sanity
+          timeout: 10
+      - name: Init List
+        id: init-list
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Init List
+          setup-command: npm install
+          command: npm test initList
+          timeout: 10
+          max-score: 10
+      - name: Append
+        id: append
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Append
+          setup-command: npm install
+          command: npm test append
+          timeout: 10
+          max-score: 10
+      - name: Contains Value
+        id: contains-value
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Contains Value
+          setup-command: npm install
+          command: npm test containsValue
+          timeout: 10
+          max-score: 10
+      - name: Get Value
+        id: get-value
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Get Value
+          setup-command: npm install
+          command: npm test getValue
+          timeout: 10
+          max-score: 10
+      - name: Insert
+        id: insert
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Insert
+          setup-command: npm install
+          command: npm test insert
+          timeout: 10
+          max-score: 10
+      - name: Remove At
+        id: remove-at
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Remove At
+          setup-command: npm install
+          command: npm test removeAt
+          timeout: 10
+          max-score: 10
+      - name: Remove First
+        id: remove-first
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Remove First
+          setup-command: npm install
+          command: npm test removeFirst
+          timeout: 10
+          max-score: 10
+      - name: Remove Last
+        id: remove-last
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Remove Last
+          setup-command: npm install
+          command: npm test removeLast
+          timeout: 10
+          max-score: 10
+      - name: Report
+        id: report
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Report
+          setup-command: npm install
+          command: npm test report
+          timeout: 10
+          max-score: 10
+      - name: Size
+        id: size
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Size
+          setup-command: npm install
+          command: npm test size
+          timeout: 10
+          max-score: 10
+      - name: Autograding Reporter
+        uses: classroom-resources/autograding-grading-reporter@v1
+        env:
+          SANITY_RESULTS: "${{steps.sanity.outputs.result}}"
+          INIT-LIST_RESULTS: "${{steps.init-list.outputs.result}}"
+          APPEND_RESULTS: "${{steps.append.outputs.result}}"
+          CONTAINS-VALUE_RESULTS: "${{steps.contains-value.outputs.result}}"
+          GET-VALUE_RESULTS: "${{steps.get-value.outputs.result}}"
+          INSERT_RESULTS: "${{steps.insert.outputs.result}}"
+          REMOVE-AT_RESULTS: "${{steps.remove-at.outputs.result}}"
+          REMOVE-FIRST_RESULTS: "${{steps.remove-first.outputs.result}}"
+          REMOVE-LAST_RESULTS: "${{steps.remove-last.outputs.result}}"
+          REPORT_RESULTS: "${{steps.report.outputs.result}}"
+          SIZE_RESULTS: "${{steps.size.outputs.result}}"
+        with:
+          runners: sanity,init-list,append,contains-value,get-value,insert,remove-at,remove-first,remove-last,report,size

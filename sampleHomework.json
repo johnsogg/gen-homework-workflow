@@ -1,0 +1,46 @@
+[
+  {
+    "testName": "sanity",
+    "points": 10
+  },
+  {
+    "testName": "initList",
+    "points": 10
+  },
+  {
+    "testName": "append",
+    "points": 10
+  },
+  {
+    "testName": "containsValue",
+    "points": 10
+  },
+  {
+    "testName": "getValue",
+    "points": 10
+  },
+  {
+    "testName": "insert",
+    "points": 10
+  },
+  {
+    "testName": "removeAt",
+    "points": 10
+  },
+  {
+    "testName": "removeFirst",
+    "points": 10
+  },
+  {
+    "testName": "removeLast",
+    "points": 10
+  },
+  {
+    "testName": "report",
+    "points": 10
+  },
+  {
+    "testName": "size",
+    "points": 10
+  }
+]
