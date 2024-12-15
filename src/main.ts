@@ -1,113 +1,69 @@
+#!/usr/bin/env ts-node
+
 import { dump, load } from "js-yaml";
 import fs from "fs";
 import path from "path";
-import { kebabCase } from "lodash";
 
-type TestSpec = {
-  testName: string;
-  points: number;
-};
+import { Command } from "commander";
+import {
+  makeAutogradingReporter,
+  makeCheckoutStep,
+  makeStep,
+  TestSpec,
+} from "./genHomeworkWorkflow";
 
-type Names = {
-  human: string;
-  npm: string;
-  kebab: string;
-  env: string;
-};
+const program = new Command();
+program
+  .name("gen-homework-workflow")
+  .description(
+    "create Github Classroom autograding workflow based on a simple JSON spec"
+  )
+  .requiredOption(
+    "-i | --input <jsonFile>",
+    'Input JSON file with format [ {testName: "someTest", points: 10}, {testName: "anotherTest", points: 10}, ... ]'
+  )
+  .requiredOption(
+    "-o | --output <yamlFile>",
+    "Output YAML file suitable for copy/paste into Github Classroom"
+  )
+  .action((_name, options) => {
+    console.log("Full options:");
+    // console.log(JSON.stringify(options, null, 4));
+    // console.log(options.getOptionValue("input"));
+    const inFile = options.getOptionValue("input");
+    const outFile = options.getOptionValue("output");
+    console.log("in/out files:", inFile, outFile);
+    const filePath = path.join(process.cwd(), inFile);
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found: ${filePath}`);
+      process.exit(1);
+    }
 
-// Use commander to parse all this
-const fileName = process.argv[2];
-const filePath = path.join(process.cwd(), fileName);
+    const homeworkSpecString = fs.readFileSync(filePath, "utf8");
+    const homeworkSpecs: TestSpec[] = JSON.parse(homeworkSpecString);
+    const templatePath = path.join(__dirname, "..", "template.yml");
+    const doc = load(fs.readFileSync(templatePath, "utf8"));
 
-if (!fs.existsSync(filePath)) {
-  console.error(`File not found: ${filePath}`);
-  process.exit(1);
-}
+    const steps = homeworkSpecs.map((spec) => makeStep(spec));
+    const autogradeStep = makeAutogradingReporter(homeworkSpecs);
 
-const homeworkSpecString = fs.readFileSync(filePath, "utf8");
-const homeworkSpecs: TestSpec[] = JSON.parse(homeworkSpecString);
+    doc["jobs"]["run-autograding-tests"]["steps"] = [
+      makeCheckoutStep(),
+      ...steps,
+      autogradeStep,
+    ];
 
-const doc = load(fs.readFileSync("./template.yml", "utf8"));
-
-const toHuman = (functionName: string): string => {
-  return kebabCase(functionName) // initTest -> init-test
-    .replace("-", " ") // init-test -> init test
-    .replace(
-      // init test -> Init Test
-      /\w\S*/g, // grab words
-      (text) => {
-        return (
-          text.charAt(0).toUpperCase() + // upper case first letter
-          text.substring(1).toLowerCase() // copy remainder of word
-        );
+    const inYaml = dump(doc);
+    const outFilePath = path.join(process.cwd(), outFile);
+    fs.writeFile(outFilePath, inYaml, (err) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log("File written successfully!");
       }
-    );
-};
+    });
+  })
+  .parse(process.argv);
 
-const getNames = (functionName: string): Names => {
-  return {
-    human: toHuman(functionName),
-    npm: functionName,
-    kebab: kebabCase(functionName),
-    env: kebabCase(functionName).toUpperCase(),
-  };
-};
-
-const makeCheckoutStep = () => {
-  return {
-    name: "Checkout code",
-    uses: "actions/checkout@v4",
-  };
-};
-
-const makeStep = ({ testName, points }: TestSpec) => {
-  const names = getNames(testName);
-  const ret = {
-    name: names.human,
-    id: names.kebab,
-    uses: "classroom-resources/autograding-command-grader@v1",
-    with: {
-      "test-name": names.human,
-      "setup-command": "npm install",
-      command: `npm test ${names.npm}`,
-      timeout: 10,
-      "max-score": points,
-    },
-  };
-  return ret;
-};
-
-const makeEnvObject = (allNames: Names[]): object => {
-  const ret = Object.fromEntries(
-    allNames.map((names) => [
-      `${names.env}_RESULTS`,
-      `\${{steps.${names.kebab}.outputs.result}}` as string,
-    ])
-  );
-  return ret;
-};
-
-const makeAutogradingReporter = (allSpecs: TestSpec[]) => {
-  const allNames = allSpecs.map((spec) => getNames(spec.testName));
-  return {
-    name: "Autograding Reporter",
-    uses: "classroom-resources/autograding-grading-reporter@v1",
-    env: makeEnvObject(allNames),
-    with: {
-      runners: allSpecs.map((spec) => getNames(spec.testName).kebab).join(","),
-    },
-  };
-};
-
-const steps = homeworkSpecs.map((spec) => makeStep(spec));
-const autogradeStep = makeAutogradingReporter(homeworkSpecs);
-
-doc["jobs"]["run-autograding-tests"]["steps"] = [
-  makeCheckoutStep(),
-  ...steps,
-  autogradeStep,
-];
-
-const inYaml = dump(doc);
-
-console.log(inYaml);
+// program.parse(process.argv);
+// program.parse();

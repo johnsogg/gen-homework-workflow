@@ -1,1 +1,5 @@
 node_modules
+# ignore this particular output file to avoid git hassles
+workflow.yaml
+# output dir
+dist
